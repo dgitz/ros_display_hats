@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>ros_display_hats</name>
+  <version>0.0.0</version>
+  <description>The ros_display_hats package</description>
+  <maintainer email="davidgitz@gmail.com">David Gitz</maintainer>
+  <license>MIT</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>eros</depend>
+  <export>
+  </export>
+</package>
