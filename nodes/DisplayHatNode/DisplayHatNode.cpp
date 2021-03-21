@@ -25,10 +25,11 @@ bool DisplayHatNode::changenodestate_service(eros::srv_change_nodestate::Request
     res.NodeState = Node::NodeStateString(process->get_nodestate());
     return true;
 }
+
 bool DisplayHatNode::start() {
     initialize_diagnostic(DIAGNOSTIC_SYSTEM, DIAGNOSTIC_SUBSYSTEM, DIAGNOSTIC_COMPONENT);
     bool status = false;
-    process = new DisplayHatProcess();
+    process = new HatNodeProcess();
     set_basenodename(BASE_NODE_NAME);
     initialize_firmware(
         MAJOR_RELEASE_VERSION, MINOR_RELEASE_VERSION, BUILD_NUMBER, FIRMWARE_DESCRIPTION);
@@ -87,6 +88,91 @@ Diagnostic::DiagnosticDefinition DisplayHatNode::finish_initialization() {
     std::string srv_nodestate_topic = "/" + node_name + "/srv_nodestate_change";
     nodestate_srv =
         n->advertiseService(srv_nodestate_topic, &DisplayHatNode::changenodestate_service, this);
+    // Read Hat Configuration
+    std::map<std::string, HatConfig> hat_configs = process->load_hat_config();
+    // Create Hats
+    for (auto hat_it : hat_configs) {
+#ifdef __arm__
+        if (hat_it.second.hat_type == "DisplayHat") {
+            DisplayHat::HatModel model = DisplayHat::HatModelType(hat_it.second.hat_model);
+            if (model == DisplayHat::HatModel::UNKNOWN) {
+                diag = process->update_diagnostic(Diagnostic::DiagnosticType::DATA_STORAGE,
+                                                  Level::Type::ERROR,
+                                                  Diagnostic::Message::INITIALIZING_ERROR,
+                                                  "Hat Type: " + hat_it.second.hat_type +
+                                                      " Model: " + hat_it.second.hat_model +
+                                                      " Not Supported.");
+                logger->log_diagnostic(diag);
+                return diag;
+            }
+            else {
+                hats.emplace(std::make_pair(hat_it.second.hat_name, new DisplayHat(model)));
+            }
+        }
+#endif
+    }
+    if (hat_configs.size() == 0) {
+        diag = process->update_diagnostic(Diagnostic::DiagnosticType::DATA_STORAGE,
+                                          Level::Type::ERROR,
+                                          Diagnostic::Message::INITIALIZING_ERROR,
+                                          "No Hats Defined. Exiting.");
+        logger->log_diagnostic(diag);
+        return diag;
+    }
+    std::string board_version = process->exec(RaspberryPiDefinition::boardversion_check, true);
+    RaspberryPiDefinition::RaspberryPiModel pi_model =
+        RaspberryPiDefinition::RaspberryPiModelFromVersion(board_version);
+    if (pi_model == RaspberryPiDefinition::RaspberryPiModel::UNKNOWN) {
+        diag = process->update_diagnostic(Diagnostic::DiagnosticType::DATA_STORAGE,
+                                          Level::Type::ERROR,
+                                          Diagnostic::Message::INITIALIZING_ERROR,
+                                          "Unsupported Raspberry Pi Version: " + board_version);
+        logger->log_diagnostic(diag);
+        return diag;
+    }
+    logger->log_warn("Detected Board Version: " +
+                     RaspberryPiDefinition::RaspberryPiModelString(pi_model));
+    for (auto hat_it : hats) {
+        auto config = hat_configs.find(hat_it.first);
+        if (config == hat_configs.end()) {
+            diag = process->update_diagnostic(Diagnostic::DiagnosticType::DATA_STORAGE,
+                                              Level::Type::ERROR,
+                                              Diagnostic::Message::INITIALIZING_ERROR,
+                                              "Cannot lookup Hat: " + hat_it.first);
+            logger->log_diagnostic(diag);
+            return diag;
+        }
+
+#ifdef __arm__
+        {
+            DisplayHat *hat = dynamic_cast<DisplayHat *>(hat_it.second.get());
+            if (hat != nullptr) {
+                if (hat->init(logger, pi_model, config->second) == false) {
+                    diag = process->update_diagnostic(Diagnostic::DiagnosticType::DATA_STORAGE,
+                                                      Level::Type::ERROR,
+                                                      Diagnostic::Message::INITIALIZING_ERROR,
+                                                      "Unable to initialize Hat: " + hat_it.first);
+                    return diag;
+                }
+                else {
+                    // Hat Initialized OK.  Now need to setup ROS for the Hat
+                    if (hat->init_ros(n, host_name) == false) {
+                        diag = process->update_diagnostic(
+                            Diagnostic::DiagnosticType::DATA_STORAGE,
+                            Level::Type::ERROR,
+                            Diagnostic::Message::INITIALIZING_ERROR,
+                            "Unable to initialize Hat ROS Connection: " + hat_it.first);
+                        return diag;
+                    }
+                    else {
+                        logger->log_notice("Hat: " + hat_it.first + " Initialized.");
+                    }
+                }
+            }
+        }
+#endif
+    }
+
     diag = process->update_diagnostic(Diagnostic::DiagnosticType::SOFTWARE,
                                       Level::Type::INFO,
                                       Diagnostic::Message::NOERROR,
@@ -137,6 +223,12 @@ bool DisplayHatNode::run_1hz() {
             logger->log_diagnostic(diag);
         }
     }
+    for (auto hat_it : hats) {
+        Diagnostic::DiagnosticDefinition diag = hat_it.second->get_diagnostic();
+        if (diag.level > Level::Type::NOTICE) {
+            logger->log_diagnostic(diag);
+        }
+    }
     return true;
 }
 bool DisplayHatNode::run_10hz() {
@@ -147,6 +239,16 @@ void DisplayHatNode::thread_loop() {
     while (kill_node == false) { ros::Duration(1.0).sleep(); }
 }
 void DisplayHatNode::cleanup() {
+    for (auto hat_it : hats) {
+#ifdef __arm__
+        {
+            DisplayHat *hat = dynamic_cast<DisplayHat *>(hat_it.second.get());
+            if (hat != nullptr) {
+                hat->cleanup();
+            }
+        }
+#endif
+    }
     process->request_statechange(Node::State::FINISHED);
     process->cleanup();
     delete process;

@@ -10,17 +10,25 @@ project(ros_display_hats)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   eros
+  ros_hats
+  cv_bridge
+  image_transport
 )
-
-
+find_package(OpenCV)
+add_service_files(
+  FILES
+  srv_get_displayinfo.srv
+)
+generate_messages(DEPENDENCIES std_msgs)
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS eros
+  CATKIN_DEPENDS eros ros_hats
 )
 
 include_directories(
  include
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 
 )
 add_subdirectory(src)

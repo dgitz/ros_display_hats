@@ -1,3 +1,0 @@
-catkin_add_gtest(test_displayHatProcess test_DisplayHatProcess.cpp)
-target_link_libraries(test_displayHatProcess ${catkin_LIBRARIES} ${Boost_LIBRARIES} logger displayHatProcess)
-add_dependencies(test_displayHatProcess eros_generate_messages_cpp)

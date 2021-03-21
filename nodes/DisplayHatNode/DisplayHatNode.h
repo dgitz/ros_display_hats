@@ -6,12 +6,14 @@
 // C++ System Files
 // ROS Base Functionality
 // ROS Messages
+
 // Project
 #include <eros/BaseNode.h>
+#include <ros_hats/Hat/Hat.h>
 #ifdef __arm__
-#include <ros_display_hats/Driver/TFTHat/TFTHatDriver.h>
+#include <ros_display_hats/Hat/DisplayHat.h>
 #endif
-#include "DisplayHatProcess.h"
+#include <ros_hats/HatNodeProcess.h>
 
 /*! \class DisplayHatNode DisplayHatNode.h "DisplayHatNode.h"
  *  \brief */
@@ -43,7 +45,7 @@ class DisplayHatNode : public BaseNode
     const System::Component DIAGNOSTIC_COMPONENT = System::Component::ENTIRE_SUBSYSTEM;
     DisplayHatNode();
     ~DisplayHatNode();
-    DisplayHatProcess* get_process() {
+    HatNodeProcess* get_process() {
         return process;
     }
     bool start();
@@ -61,16 +63,18 @@ class DisplayHatNode : public BaseNode
 
     bool changenodestate_service(eros::srv_change_nodestate::Request& req,
                                  eros::srv_change_nodestate::Response& res);
+
     void system_commandAction_Callback(const eros::system_commandGoalConstPtr& goal);
     void command_Callback(const eros::command::ConstPtr& t_msg);
 
    private:
     Diagnostic::DiagnosticDefinition read_launchparameters();
-    DisplayHatProcess* process;
+    HatNodeProcess* process;
     actionlib::SimpleActionServer<eros::system_commandAction> system_command_action_server;
 #ifdef __arm__
     TFTHatDriver* driver;
 #endif
+    std::map<std::string, std::shared_ptr<Hat>> hats;
 };
 
 #endif  // DisplayHatNode_H
