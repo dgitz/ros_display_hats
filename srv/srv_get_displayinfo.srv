@@ -1,0 +1,5 @@
+#Get Display Info
+string DeviceName
+---
+uint64 width
+uint64 height
