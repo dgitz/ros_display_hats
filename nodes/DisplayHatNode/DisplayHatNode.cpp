@@ -1,4 +1,5 @@
-#include "DisplayHatNode.h"
+#include <ros_display_hats/nodes/DisplayHatNode/DisplayHatNode.h>
+using namespace eros;
 bool kill_node = false;
 DisplayHatNode::DisplayHatNode()
     : system_command_action_server(

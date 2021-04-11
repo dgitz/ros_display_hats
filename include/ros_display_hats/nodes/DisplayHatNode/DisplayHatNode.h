@@ -13,11 +13,10 @@
 #ifdef __arm__
 #include <ros_display_hats/Hat/DisplayHat.h>
 #endif
-#include <ros_hats/HatNodeProcess.h>
-
+#include <ros_hats/nodes/HatNode/HatNodeProcess.h>
 /*! \class DisplayHatNode DisplayHatNode.h "DisplayHatNode.h"
  *  \brief */
-class DisplayHatNode : public BaseNode
+class DisplayHatNode : public eros::BaseNode
 {
    public:
     /*! \brief The base name of the Node.*/
@@ -30,26 +29,26 @@ class DisplayHatNode : public BaseNode
     const uint16_t MINOR_RELEASE_VERSION = 0;
 
     /*! \brief The Build Number of the Node.*/
-    const uint16_t BUILD_NUMBER = 0;
+    const uint16_t BUILD_NUMBER = 1;
 
     /*! \brief A Description of the Firmware.*/
-    const std::string FIRMWARE_DESCRIPTION = "Latest Rev: 18-March-2021";
+    const std::string FIRMWARE_DESCRIPTION = "Latest Rev: 9-April-2021";
 
     /*! \brief What System this Node falls under.*/
-    const System::MainSystem DIAGNOSTIC_SYSTEM = System::MainSystem::ROVER;
+    const eros::System::MainSystem DIAGNOSTIC_SYSTEM = eros::System::MainSystem::ROVER;
 
     /*! \brief What Subsystem this Node falls under.*/
-    const System::SubSystem DIAGNOSTIC_SUBSYSTEM = System::SubSystem::ENTIRE_SYSTEM;
+    const eros::System::SubSystem DIAGNOSTIC_SUBSYSTEM = eros::System::SubSystem::ENTIRE_SYSTEM;
 
     /*! \brief What Component this Node falls under.*/
-    const System::Component DIAGNOSTIC_COMPONENT = System::Component::ENTIRE_SUBSYSTEM;
+    const eros::System::Component DIAGNOSTIC_COMPONENT = eros::System::Component::ENTIRE_SUBSYSTEM;
     DisplayHatNode();
     ~DisplayHatNode();
     HatNodeProcess* get_process() {
         return process;
     }
     bool start();
-    Diagnostic::DiagnosticDefinition finish_initialization();
+    eros::Diagnostic::DiagnosticDefinition finish_initialization();
     bool run_loop1();
     bool run_loop2();
     bool run_loop3();
@@ -68,7 +67,7 @@ class DisplayHatNode : public BaseNode
     void command_Callback(const eros::command::ConstPtr& t_msg);
 
    private:
-    Diagnostic::DiagnosticDefinition read_launchparameters();
+    eros::Diagnostic::DiagnosticDefinition read_launchparameters();
     HatNodeProcess* process;
     actionlib::SimpleActionServer<eros::system_commandAction> system_command_action_server;
 #ifdef __arm__
