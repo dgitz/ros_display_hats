@@ -36,8 +36,7 @@ int main(int argc, char* argv[]) {
         logger->log_error("Screen Size error.");
         return -1;
     }
-    std::string dir =
-        "/home/robot/catkin_ws/src/ros_display_hats/src/Hat/Driver/TFTHat/test/media/";
+    std::string dir = "~/catkin_ws/src/ros_display_hats/src/Hat/Driver/TFTHat/test/media/";
 
     double dt = 0.5;
     int counter = 0;
